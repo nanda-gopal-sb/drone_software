@@ -7,7 +7,7 @@ import os
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp|fflags;nobuffer|flags;low_delay|probesize;32|analyzeduration;0"
 
 model = YOLO("../yolo11n.pt")
-source = "rtsp://192.168.144.25:8554/main.264"
+source = "2"
 
 print("Starting stream processing with digital zoom...")
 
