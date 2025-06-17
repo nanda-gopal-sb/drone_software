@@ -7,7 +7,7 @@ import queue
 from pymavlink import mavutil
 from ultralytics import YOLO
 
-# --- Configuration ---
+
 RTSP_STREAM_URL = ""
 MAVPROXY_PORT = "udp:localhost:14550"
 OUTPUT_FRAME_DIR = "frames"
@@ -83,7 +83,7 @@ def video_capture_thread():
     cap = cv2.VideoCapture(RTSP_STREAM_URL)
     if not cap.isOpened():
         print(f"Error: Could not open RTSP stream at {RTSP_STREAM_URL}")
-        stop_event.set() # Signal main thread to stop
+        stop_event.set()
         return
 
     print("Video capture thread started.")
@@ -95,7 +95,7 @@ def video_capture_thread():
         if not ret:
             print("Video capture thread: End of stream or error reading frame. Attempting to re-open...")
             cap.release()
-            time.sleep(1) # Wait a bit before retrying
+            time.sleep(1)
             cap = cv2.VideoCapture(RTSP_STREAM_URL)
             if not cap.isOpened():
                 print("Video capture thread: Failed to re-open stream. Exiting.")
@@ -106,12 +106,11 @@ def video_capture_thread():
         current_time = time.time()
         if current_time - last_frame_time >= FRAME_PROCESS_INTERVAL:
             try:
-                frame_queue.put((frame.copy(), current_time), block=False) # Put a copy to avoid modification issues
-                # print(f"Video capture thread: Put frame {frame_counter} to queue. Queue size: {frame_queue.qsize()}")
+                frame_queue.put((frame.copy(), current_time), block=False)
                 last_frame_time = current_time
                 frame_counter += 1
             except queue.Full:
-                pass # If queue is full, just drop the frame, processing can't keep up
+                pass
 
     print("Video capture thread stopping.")
     cap.release()
@@ -122,7 +121,7 @@ def gps_reader_thread():
         print("GPS reader thread: MAVLink connection not initialized. Exiting.")
         return
 
-    master.wait_heartbeat() # Wait for heartbeat once
+    master.wait_heartbeat()
     print("GPS reader thread: Heartbeat received from MAVProxy!")
 
     while not stop_event.is_set():
