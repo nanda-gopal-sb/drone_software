@@ -8,11 +8,11 @@ from pymavlink import mavutil
 from ultralytics import YOLO
 
 # --- Configuration ---
-RTSP_STREAM_URL = ""
+RTSP_STREAM_URL = "rtsp://192.168.144.25:8554/main.264"
 MAVPROXY_PORT = "udp:localhost:14550"
 OUTPUT_FRAME_DIR = "frames"
 GPS_LOG_FILE = "gps_check.txt"
-YOLO_MODEL_PATH = "yolov8n.pt"
+YOLO_MODEL_PATH = "../TRAIN/best.pt"
 FRAME_PROCESS_INTERVAL = 1.0
 
 os.makedirs(OUTPUT_FRAME_DIR, exist_ok=True)
