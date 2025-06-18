@@ -9,7 +9,7 @@ from ultralytics import YOLO
 
 # --- Configuration ---
 RTSP_STREAM_URL = "rtsp://192.168.144.25:8554/main.264"
-MAVPROXY_PORT = "udp:localhost:14550"
+MAVPROXY_PORT = "udp:127.0.0.1:14550"
 OUTPUT_FRAME_DIR = "frames"
 GPS_LOG_FILE = "gps_check.txt"
 YOLO_MODEL_PATH = "../TRAIN/best.pt"
@@ -17,7 +17,7 @@ FRAME_PROCESS_INTERVAL = 1.0
 
 os.makedirs(OUTPUT_FRAME_DIR, exist_ok=True)
 
-frame_queue = queue.Queue(maxsize=10) # Queue for raw frames
+frame_queue = queue.Queue(maxsize=12) # Queue for raw frames
 gps_data_lock = threading.Lock()
 current_gps_data = {
     "latitude": None,
@@ -59,12 +59,14 @@ def write_gps_to_exif(image_path, latitude, longitude, altitude):
     try:
         exiftool_command = [
             "exiftool",
+            "-overwrite_original", 
             f"-GPSLatitude={latitude}",
             f"-GPSLongitude={longitude}",
             f"-GPSAltitude={altitude if altitude is not None else 0}",
             "-GPSAltitudeRef=0", # 0 for above sea level, 1 for below
             image_path
         ]
+        
         result = subprocess.run(exiftool_command, capture_output=True, text=True, check=True)
         if "1 image files updated" in result.stdout:
             print(f"Successfully wrote GPS to EXIF for {image_path}")
@@ -134,7 +136,7 @@ def gps_reader_thread():
                         current_gps_data["longitude"] = msg.lon / 1e7
                         current_gps_data["altitude"] = msg.alt / 1e3 # Altitude in meters
                         current_gps_data["timestamp"] = time.time()
-                    # print(f"GPS reader thread: Lat={current_gps_data['latitude']:.6f}, Lon={current_gps_data['longitude']:.6f}")
+                    print(f"GPS reader thread: Lat={current_gps_data['latitude']:.6f}, Lon={current_gps_data['longitude']:.6f}")
         except Exception as e:
             print(f"GPS reader thread: Error reading MAVLink message: {e}")
         time.sleep(0.01) # Small sleep to prevent busy-waiting
