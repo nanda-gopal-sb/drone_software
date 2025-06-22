@@ -1,0 +1,5 @@
+TODO:
+- Install ODM with GPU on Gautham Computer
+- Run Simulation with python
+- Webcam with STIL
+

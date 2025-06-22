@@ -1,64 +1,29 @@
-# from pymavlink import mavutil
-# import time
-
-# connection_string = 'udp:127.0.0.1:14550' 
-# master = mavutil.mavlink_connection(connection_string)
-
-# master.wait_heartbeat()
-# print("Heartbeat from system (ID: %d)" % master.target_system)
-
-# mode = 'GUIDED'
-# mode_id = master.mode_mapping()[mode]
-# master.set_mode(mode_id)
-# print(f"Mode set to {mode}")
-
-# time.sleep(1)
-
-# waypoints = [
-#     (10.050586, 76.330783, 15),
-#     (10.047826, 76.329881, 15),  
-#     (10.047053, 76.331717, 15),  
-#     (10.049185, 76.332703, 15),  
-# ]
-# master.mav.mission_clear_all_send(master.target_system, master.target_component)
-
-# for i, (lat, lon, alt) in enumerate(waypoints):
-#     master.mav.mission_item_send(
-#         master.target_system,
-#         master.target_component,
-#         i,  # Sequence number for the waypoint
-#         mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,  # Coordinate frame (use relative altitude)
-#         mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  # Command type for waypoint
-#         0,  # Current waypoint (0 = false, 1 = true)
-#         0,  # Autocontinue (1 = Yes, 0 = No)
-#         0,  # Param 1: hold time in decimal seconds (not used here)
-#         0,  # Param 2: acceptance radius (not used here)
-#         0,  # Param 3: pass radius (not used here)
-#         0,  # Param 4: yaw angle (not used here)
-#         lat,  # Latitude
-#         lon,  # Longitude
-#         alt   # Altitude
-#     )
-#     print(f"Waypoint {i+1} sent: Latitude {lat}, Longitude {lon}, Altitude {alt} meters")
-
-# master.mav.mission_ack_send(master.target_system, master.target_component, 0)
-# print("Mission started. The vehicle will start navigating the waypoints.")
-
-# while True:
-#     msg = master.recv_match(type='MISSION_ITEM_REACHED', blocking=True)
-#     print(f"Reached waypoint {msg.seq}")
-#     time.sleep(1)
-
-
 from pymavlink import mavutil
 import time
+def set_target_velocity(master, vx, vy, vz=0, yaw_rate=0):
+    # Type_mask: Bitmask for ignoring specified position/velocity/acceleration components.
+    # We want to command velocities in X, Y, Z, and yaw rate, so ignore position and acceleration.
+    type_mask = (
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_X_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_Y_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_Z_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_AX_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_AY_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_AZ_IGNORE |
+        mavutil.mavlink.MAV_POS_TARGET_TYPE_MASK_YAW_IGNORE # We are not controlling yaw (but can send yaw_rate)
+    )
 
-# --- Configuration ---
-# Replace with the connection string for your MAVProxy output
-# If using SITL, it might be 'udp:127.0.0.1:14551'
-# If connecting directly to a physical drone (less common for scripting alongside GCS):
-#    'serial:/dev/ttyUSB0:57600' (Linux)
-#    'serial:COM3:57600' (Windows)
+    master.mav.set_position_target_local_ned_send(
+        0,       # time_boot_ms (not used)
+        master.target_system, # Target system
+        master.target_component, # Target component
+        mavutil.mavlink.MAV_FRAME_LOCAL_NED, # Frame
+        0b0000111111000111, # type_mask (only speeds enabled: VX, VY, VZ)
+        0, 0, 0, # x, y, z positions (not used)
+        vx, vy, vz, # x, y, z velocities (m/s)
+        0, 0, 0, # x, y, z accelerations (not used)
+        0, yaw_rate) # yaw, yaw_rate (not used)
+
 CONNECTION_STRING = 'udp:127.0.0.1:14550'
 TARGET_SYSTEM = 1  # Often 1 for the main autopilot
 TARGET_COMPONENT = 1 # Often 1 for the main autopilot (MAV_COMP_ID_AUTOPILOT1)
@@ -159,34 +124,20 @@ while time.time() - start_time < 10: # Wait up to 10 seconds for mode change
 else:
     print("Failed to set mode to GUIDED within the timeout.")
 
+
+
+
+master.mav.set_position_target_local_ned_send(
+        0,       # time_boot_ms (not used)
+        master.target_system, # Target system
+        master.target_component, # Target component
+        mavutil.mavlink.MAV_FRAME_LOCAL_NED, # Frame
+        0b0000111111000111, # type_mask (only speeds enabled: VX, VY, VZ)
+        0, 0, 0, # x, y, z positions (not used)
+        10, 20, 30, # x, y, z velocities (m/s)
+        0, 0, 0, # x, y, z accelerations (not used)
+        0, 0) 
 print("Script finished.")
 
 # You might want to add a disarm command here or further actions in GUIDED mode
 # master.mav.command_long_send(TARGET_SYSTEM, TARGET_COMPONENT, mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 0, 0, 0, 0, 0, 0, 0)
-
-waypoints = [
-    (10.050586, 76.330783, 15),
-    (10.047826, 76.329881, 15),  
-    (10.047053, 76.331717, 15),  
-    (10.049185, 76.332703, 15),  
-]
-master.mav.mission_clear_all_send(master.target_system, master.target_component)
-
-for i, (lat, lon, alt) in enumerate(waypoints):
-    master.mav.mission_item_send(
-        master.target_system,
-        master.target_component,
-        i,  # Sequence number for the waypoint
-        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,  # Coordinate frame (use relative altitude)
-        mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  # Command type for waypoint
-        0,  # Current waypoint (0 = false, 1 = true)
-        0,  # Autocontinue (1 = Yes, 0 = No)
-        0,  # Param 1: hold time in decimal seconds (not used here)
-        0,  # Param 2: acceptance radius (not used here)
-        0,  # Param 3: pass radius (not used here)
-        0,  # Param 4: yaw angle (not used here)
-        lat,  # Latitude
-        lon,  # Longitude
-        alt   # Altitude
-    )
-    print(f"Waypoint {i+1} sent: Latitude {lat}, Longitude {lon}, Altitude {alt} meters")

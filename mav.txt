@@ -1,0 +1,25 @@
+master.mav.set_position_target_local_ned_send(
+        0,       # time_boot_ms (not used)
+        master.target_system, # Target system
+        master.target_component, # Target component
+        mavutil.mavlink.MAV_FRAME_LOCAL_NED, # Frame
+        0b0000111111000111, # type_mask (only speeds enabled: VX, VY, VZ)
+        0, 0, 0, # x, y, z positions (not used)
+        vx, vy, vz, # x, y, z velocities (m/s)
+        0, 0, 0, # x, y, z accelerations (not used)
+        0, yaw_rate) # yaw, yaw_rate (not used)
+)
+
+
+master.mav.set_position_target_global_int_send(
+        0,       # time_boot_ms (not used)
+        master.target_system, # Target system
+        master.target_component, # Target component
+        mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, # Frame
+        0b0000111111000111, # type_mask (only speeds enabled: VX, VY, VZ)
+        0, 0, 0, # x, y, z positions (not used)
+        vx, vy, vz, # x, y, z velocities (m/s)
+        0, 0, 0, # x, y, z accelerations (not used)
+        0, yaw_rate) # yaw, yaw_rate (not used)
+)
+

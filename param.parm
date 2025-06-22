@@ -1,0 +1,11 @@
+SIM_MASS 10.5         # Total drone mass in kg (e.g., 5kg drone + 5.5kg payload)
+SIM_BATT_VOLTAGE 25.2 # Fully charged 6S LiPo
+SIM_BATT_CAP_AH 16.0  # 16000 mAh battery (16 Ah)
+
+# General ArduCopter Parameters affecting performance
+WPNAV_SPEED 800       # Max horizontal speed in auto modes (8 m/s)
+WPNAV_SPEED_UP 300    # Max vertical ascent speed (3 m/s)
+WPNAV_SPEED_DN 200    # Max vertical descent speed (2 m/s)
+VEL_XY_MAX 1000       # Max pilot commanded horizontal velocity (10 m/s)
+VEL_Z_MAX 300         # Max pilot commanded vertical velocity (3 m/s)
+BATT_CAPACITY 32000   #

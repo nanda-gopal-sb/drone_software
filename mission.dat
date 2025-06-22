@@ -1,0 +1,29 @@
+1. Get Mission waypoints co-ordinates and altitudes.
+2. Input said co-ordinates and altitudes as well as payload(purple) area co-ordinates into Travelling statesman probelem and find optimum path (Starting town is closest to tent)
+3. create an array of waypoints and purple box co-ordinates in order
+4. Arm the drone
+5. Send command liftoff 15m through pymavlink
+6. use pymavelink command "set_position_target_global_int_send" and set target to waypoints[i]
+7. Run step 6 again with i=i+1, once drone reaches the waypoints. Exit when len(array)>i
+8. Keep checking if curr GPS location is within Purple Box co-ordinates, if yes do step 10
+9. Once last waypoint is reached, return to waypoint 1, and execute step 6 through 8.
+10. execute the program object_gps.py, which splits frames, geotags it and checks if object is in current frame, if yes add to an array called "check_gps_points"
+11. after One round of drone is over(check_gps_points array is not empty), whenever the drone comes within 15m of the given gps location execute step 13.
+12. Continue steps 6 through 12 till counter reaches 5.
+13. trigger the AUX pin for corresponding payload
+    object 0 - AUX 1
+    object 1 - AUX 2
+    object 2 - AUX 3
+    object 3 - AUX 4
+
+Pros -
+    1. Latency issue is altogether abandonded, and becomes a non issue
+    2. Variability of mavlink command "target_local_ned_send" is abandoned(sometimes the drone may turn to north and sometimes it may not) - According to Anfil Sir
+    3. Less complexity, and total mission can be setup from python, only inputs are waypoints and altitudes
+    4. whole mission can be completed using Guided mode- no need to switch from AUTO mode to Loiter and etc
+
+
+Cons -
+    1. Only mapping of Object Deployment zone (purple is completed)
+    2. Waypoints are only immediate locations to cover and not acutal mission params (Guided mode only supports immediate locations, AUTO mode supports full missions)
+    3. Traveling statesman approach is fully theoretical at this point and cant be trusted to give a proper output.
