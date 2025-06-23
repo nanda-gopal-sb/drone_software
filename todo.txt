@@ -9,4 +9,6 @@ TODO:
 23-06
 1. Waypoint file to pymvalink
 2. Lap Counter
-3. After EOF give purple box boundray
+3. After EOF give purple box boundray and go to the first 
+4. How to do survey in drone in pymavlink
+5. 
