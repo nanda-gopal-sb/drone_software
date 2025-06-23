@@ -3,3 +3,10 @@ TODO:
 - Run Simulation with python
 - Webcam with STIL
 
+
+
+
+23-06
+1. Waypoint file to pymvalink
+2. Lap Counter
+3. After EOF give purple box boundray
