@@ -1,0 +1,37 @@
+Q. Immediately after takeoff, we want to go to drop zone, 
+just flying over with no airdrops, before taking first waypoint lap, 
+is it acceptable? Thanks
+
+A. No - this is not acceptable. You may knot knowingly deviate from the waypoint 
+path until after you have completed a full lap.
+
+Q. Does “Object Detection” refer to implementing real-time image processing 
+algorithms (such as YOLO or other object detection models), or is it sufficient to analyze the post-flight 
+mapping data and mark object locations manually on the generated map?
+If we assign new waypoints to the UAS via the GCS during flight (after takeoff), 
+would that be considered a violation of autonomous flight requirements or not?
+A. "Object Detection" can mean anything - we do not have a 
+requirement for how you do the object detection (YOLO, manual image review, etc.).
+Adding waypoints is allowed and no penalties will be applied.
+
+Q.<@166744928796409857> 
+I have three questions about the competition mission. 
+
+1. Will the flight area boundary use exactly the same GPS points as given in the GitBook, or can there be any changes on the actual competition day?
+2. In section 3.2.2 it says waypoints will be given in UTM coordinates and altitudes, but the sample mission in Appendix C uses lat/long. 
+So on competition day, will the waypoints given in paper be in this format?
+UTM Easting: 365190.40  
+UTM Northing: 4241882.52  
+UTM Zone: 18S  
+Altitude: [200 ft AGL, 342 ft MSL]
+3. Will the altitudes of the waypoints vary throughout the mission, 
+or are they expected to remain constant? Also, is there a defined maximum 
+waypoint altitude that we should prepare for?
+
+The flight area boundary will not change unless something extremely unexpected
+comes us that forces us to change that boundary. If that does happen, we will let teams know ASAP.
+Team's should expect decimal degrees like the appendix shows - 
+I will update the typo in the rules that refer to UTM coordinates.
+You should be prepared for either - one static altitude or 
+varying altitudes throughout the mission. The maximum waypoint altitude 
+that you can expect is 350ft AGL (leaves some buffer until the 400ft AGL FAA altitude limit).

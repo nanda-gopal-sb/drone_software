@@ -14,4 +14,3 @@ polygon = Polygon(
     ]
 )
 print(boolean_point_in_polygon(point, polygon))
-

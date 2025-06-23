@@ -4,17 +4,14 @@ import time
 import math
 
 # --- Connection Setup ---
-# Replace 'udp:127.0.0.1:14550' with your drone's actual connection string
-master = mavutil.mavlink_connection('udp:127.0.0.1:14550')
+master = mavutil.mavlink_connection('tcp:127.0.0.1:5760')
 
 # Wait for the first heartbeat to establish connection
 master.wait_heartbeat()
 print(f"Connected to system: {master.target_system}, component: {master.target_component}")
 
-# --- Helper Functions ---
 
 def set_mode(master, mode_name):
-    """Sets the drone's flight mode."""
     mode_id = master.mode_mapping().get(mode_name)
     if mode_id is None:
         print(f"Mode '{mode_name}' not found in mode mapping.")
