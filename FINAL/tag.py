@@ -140,8 +140,7 @@ def process_class_dir(label):
     if closest_img:
         with threading.Lock():  # protect file write
             with open(OBJECTS_FILE, "a") as f:
-                f.write(f"{label}: {closest_gps[0]};{closest_gps[1]};{closest_gps[2]}\n")
-
+                f.write(f"{closest_gps[0]};{closest_gps[1]};{closest_gps[2]}\n")
 threads = [
     threading.Thread(target=fetch_gps),
     threading.Thread(target=video_capture),

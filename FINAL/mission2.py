@@ -253,7 +253,7 @@ def read_waypoints_from_file(file_path):
 
     return waypoints
 
-def dropPayload(location,object_number):
+def dropPayload(location,pin):
     master.mav.set_position_target_global_int_send(
         0, # time_boot_ms (not used, FC sets)
         master.target_system,
@@ -280,7 +280,7 @@ def dropPayload(location,object_number):
                 print(f"Reached waypoint")
                 break
         time.sleep(0.1)
-    control_servo(object_number)
+    control_servo(pin)
 
 def control_servo(servo_pin: int, high_pwm: int = 2000, low_pwm: int = 1100, delay_seconds: int = 15):
     master_connection_string = "udp:127.0.0.1:14450"
@@ -296,7 +296,43 @@ def control_servo(servo_pin: int, high_pwm: int = 2000, low_pwm: int = 1100, del
         mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
         0,      # confirmation
         9,      # param1: servo instance number (channel 9)
-        1900,   # param2: PWM value
+        0,   # param2: PWM value
+        0, 0, 0, 0, 0 # unused params
+    )
+    master.mav.command_long_send(
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        0,      # confirmation
+        10,      # param1: servo instance number (channel 9)
+        0,   # param2: PWM value
+        0, 0, 0, 0, 0 # unused params
+    )
+    master.mav.command_long_send(
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        0,      # confirmation
+        11,      # param1: servo instance number (channel 9)
+        0,   # param2: PWM value
+        0, 0, 0, 0, 0 # unused params
+    )
+    master.mav.command_long_send(
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        0,      # confirmation
+        12,      # param1: servo instance number (channel 9)
+        0,   # param2: PWM value
+        0, 0, 0, 0, 0 # unused params
+    )
+    master.mav.command_long_send(
+        master.target_system,
+        master.target_component,
+        mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+        0,      # confirmation
+        servo_pin,      # param1: servo instance number (channel 9)
+        2000,   # param2: PWM value
         0, 0, 0, 0, 0 # unused params
     )
     print("Command sent.")
@@ -306,7 +342,7 @@ def control_servo(servo_pin: int, high_pwm: int = 2000, low_pwm: int = 1100, del
         master.target_component,
         mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
         0,      # confirmation
-        9,      # param1: servo instance number (channel 9)
+        servo_pin,      # param1: servo instance number (channel 9)
         0,   # param2: PWM value
         0, 0, 0, 0, 0 # unused params
     )
@@ -451,16 +487,21 @@ def run_drone_mission():
                         print(f"Reached waypoint {i + 1} (Circle {circle + 1}).")
                         break
                 time.sleep(0.1) # Small delay to avoid busy-waiting, but still poll frequently
+
         if circle==0:
             survey_rectangular_field()
             object_waypoints=read_waypoints_from_file("objects.txt")
-            dropPayload(object_waypoints[0])
+            dropPayload(object_waypoints[0],9)
+
         if circle==1:
-            dropPayload(object_waypoints[1])
+            dropPayload(object_waypoints[1],10)
+
         if circle==2:
-            dropPayload(object_waypoints[2])
+            dropPayload(object_waypoints[2],11)
+
         if circle==3:
-            dropPayload(object_waypoints[3])
+            dropPayload(object_waypoints[3],12)
+
     print("\n--- Mission complete! ---")
     # --- Land the drone ---
     print("Sending LAND command...")

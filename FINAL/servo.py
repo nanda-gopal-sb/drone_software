@@ -27,7 +27,7 @@ master.mav.command_long_send(
     mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
     0,      # confirmation
     9,      # param1: servo instance number (channel 9)
-    1900,   # param2: PWM value
+    2000,   # param2: PWM value
     0, 0, 0, 0, 0 # unused params
 )
 print("Command sent.")
@@ -45,6 +45,17 @@ if ack_msg:
         print(f"Command result was {ack_msg.result} (check MAV_RESULT enum for details).")
 else:
     print("No COMMAND_ACK received. Command might not have reached the autopilot or timed out.")
+
+master.mav.command_long_send(
+    master.target_system,
+    master.target_component,
+    mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
+    0,      # confirmation
+    9,      # param1: servo instance number (channel 9)
+    0,   # param2: PWM value
+    0, 0, 0, 0, 0 # unused params
+)
+print("Command sent.")
 
 # --- 5. Keep the script alive briefly to allow command processing ---
 time.sleep(2) # Give the autopilot a moment to act
