@@ -93,7 +93,6 @@ def object_detection():
                             class_threads_started.add(label)
                             threading.Thread(target=process_class_dir, args=(label,)).start()
 
-            os.remove(fpath)
         time.sleep(1)
 
 def process_class_dir(label):
