@@ -2,7 +2,6 @@ import time
 from pymavlink import mavutil
 
 def run_drone_mission():
-    # --- 1. Ask the user for the number of waypoints ---
     while True:
         try:
             num_waypoints = int(input("Enter the number of waypoints: "))
