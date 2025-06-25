@@ -26,7 +26,7 @@ master.mav.command_long_send(
     master.target_component,
     mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
     0,      # confirmation
-    9,      # param1: servo instance number (channel 9)
+    5,      # param1: servo instance number (channel 9)
     2000,   # param2: PWM value
     0, 0, 0, 0, 0 # unused params
 )
@@ -51,7 +51,7 @@ master.mav.command_long_send(
     master.target_component,
     mavutil.mavlink.MAV_CMD_DO_SET_SERVO,
     0,      # confirmation
-    9,      # param1: servo instance number (channel 9)
+    5,      # param1: servo instance number (channel 9)
     0,   # param2: PWM value
     0, 0, 0, 0, 0 # unused params
 )
