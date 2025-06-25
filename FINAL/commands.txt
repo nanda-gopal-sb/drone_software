@@ -1,0 +1,14 @@
+ffplay -rtsp_transport tcp -analyzeduration 0 -probesize 32 -fflags nobuffer -flags low_delay -framedrop -strict experimental -i rtsp://192.168.144.25:8554/main.264
+mavproxy --master=COM13 --out=udp:127.0.0.1:14550
+exiftool -overwrite_original -GPSLatitude="51.5074" -GPSLatitudeRef="N" -GPSLongitude="0.1278" -GPSLongitudeRef="W" -GPSAltitude="35" img.jpg
+
+docker run --rm -it --gpus all \
+  -v /mnt/e/drone_software/FINAL/CROPPED:/code/images \
+  -v /mnt/e/drone_software/FINAL/odm_output:/code/odm_output \
+  opendronemap/odm:gpu \
+  --fast-orthophoto \
+  --skip-3dmodel \
+  --skip-3dtexturing \
+  --skip-dsm \
+  --skip-dense \
+  --dtm

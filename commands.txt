@@ -1,3 +1,0 @@
-ffplay -rtsp_transport tcp -analyzeduration 0 -probesize 32 -fflags nobuffer -flags low_delay -framedrop -strict experimental -i rtsp://192.168.144.25:8554/main.264
-mavproxy --master=COM13 --out=udp:127.0.0.1:14550
-exiftool -overwrite_original -GPSLatitude="51.5074" -GPSLatitudeRef="N" -GPSLongitude="0.1278" -GPSLongitudeRef="W" -GPSAltitude="35" img.jpg

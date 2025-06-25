@@ -12,7 +12,7 @@ airdrop_coordinates = [
         (38.315683, -76.552586),  # Corner 2
         (38.315895, -76.552519),  # Corner 3
         (38.315607, -76.550800)   # Corner 4
-    ]
+]
 survey_altitude_meters = 15 
 survey_line_spacing_meters = 7 
 try:
@@ -253,7 +253,7 @@ def survey_rectangular_field(target_system=1, target_component=1):
                 0b110111111000, # Only use position, ignore velocity, accel, yaw,
                 int(38.315386 * 1e7),  # Fallback Latitude in degrees * 10^7
                 int(-76.542861 * 1e7),  # Fallback Longitude in degrees * 10^7 (added a longitude for clarity)
-                16,               # Fallback Altitude in meters (relative to home)
+                18,               # Fallback Altitude in meters (relative to home)
                 0, 0, 0,                # Vx, Vy, Vz (ignored by type_mask)
                 0, 0, 0,                # AFx, AFy, AFz (ignored by type_mask)
                 0, 0                    # Yaw, Yaw Rate (ignored by type_mask)
@@ -309,7 +309,7 @@ def dropPayload(location,pin):
         0b110111111000, # Only use position, ignore velocity, accel, yaw
         int(location['lat'] * 1e7), # lat_int (degrees * 10^7)
         int(location['lon'] * 1e7), # lon_int (degrees * 10^7)
-        location['alt'], # alt (meters)
+        18, # alt (meters)
         0, 0, 0, # vx, vy, vz (ignored by mask)
         0, 0, 0, # afx, afy, afz (ignored by mask)
         0, 0 # yaw, yaw_rate (ignored by mask)
