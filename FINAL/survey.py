@@ -1,30 +1,70 @@
+# Import necessary libraries
 import math
 import time
-from pymavlink import mavutil, mavwp
+from pymavlink import mavutil
 
+# --- Helper function for Haversine distance (needed for waypoint checking) ---
 def haversine_distance(lat1, lon1, lat2, lon2):
-    R = 6371000  # Radius of Earth in meters
-    phi1 = math.radians(lat1)
-    phi2 = math.radians(lat2)
-    delta_phi = math.radians(lat2 - lat1)
-    delta_lambda = math.radians(lon2 - lon1)
+    """
+    Calculates the Haversine distance between two points on Earth
+    given their latitudes and longitudes.
+    Returns distance in meters.
+    """
+    R = 6371000  # Radius of Earth in meters (approximate)
+    lat1_rad = math.radians(lat1)
+    lon1_rad = math.radians(lon1)
+    lat2_rad = math.radians(lat2)
+    lon2_rad = math.radians(lon2)
 
-    a = math.sin(delta_phi / 2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda / 2)**2
+    dlat = lat2_rad - lat1_rad
+    dlon = lon2_rad - lon1_rad
+
+    a = math.sin(dlat / 2)**2 + math.cos(lat1_rad) * math.cos(lat2_rad) * math.sin(dlon / 2)**2
     c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    return R * c
 
-# --- Main Drone Survey Function ---
+    distance = R * c
+    return distance
 
-def survey_rectangular_field(coordinates, altitude, line_spacing, connection_string, target_system=1, target_component=1):
+# --- Mock Variables (replace with actual values in a real setup) ---
+# Example MAVLink connection string for SITL (Software In The Loop) simulation.
+# For a real drone, this might be 'udp:0.0.0.0:14550' for a UDP connection,
+# or a serial port like '/dev/ttyUSB0' with a specific baud rate.
+connection_string = 'udp:127.0.0.1:14550'
+
+# Example airdrop coordinates defining the rectangular boundary of your survey area.
+# In a real scenario, these would be the actual corners of your field.
+airdrop_coordinates = [
+        (38.315386, -76.550875),  # Corner 1
+        (38.315683, -76.552586),  # Corner 2
+        (38.315895, -76.552519),  # Corner 3
+        (38.315607, -76.550800)   # Corner 4
+]
+
+def survey_rectangular_field(target_system=1, target_component=1):
+    """
+    Performs a rectangular field survey mission with a drone.
+    The drone flies in a zigzag pattern, stopping at each waypoint to allow for video feed.
+
+    Args:
+        target_system (int): MAVLink system ID of the drone. Default to 1.
+        target_component (int): MAVLink component ID of the drone. Default to 1.
+    """
+    altitude = 18 # Target altitude for the survey in meters (relative to home).
+    
+    # MODIFICATION 1: Set the line spacing to 7.9 meters. This defines the distance
+    # between the parallel lines of the zigzag survey pattern.
+    line_spacing = 7.9 # meters between parallel survey lines (grid points)
+
     print(f"Connecting to MAVLink: {connection_string}...")
     try:
+        # Establish MAVLink connection to the flight controller.
         master = mavutil.mavlink_connection(connection_string, baud=115200)
     except Exception as e:
         print(f"Error connecting to MAVLink: {e}")
         print("Please ensure the connection string is correct and the flight controller is running.")
         return
 
-    # Wait for the first heartbeat to ensure connection
+    # Wait for the first heartbeat message from the drone to confirm connection.
     print("Waiting for heartbeat...")
     try:
         master.wait_heartbeat()
@@ -34,107 +74,99 @@ def survey_rectangular_field(coordinates, altitude, line_spacing, connection_str
         print("Ensure the flight controller is powered on and connected.")
         return
 
-    # Update target system and component from the received heartbeat
+    # Update target system and component IDs from the received heartbeat.
+    # This ensures we are communicating with the correct drone.
     target_system = master.target_system
     target_component = master.target_component
     print(f"Using drone SYSID: {target_system}, COMPID: {target_component}")
 
-    # --- Mode and Arming ---
+    # --- Drone Mode and Arming ---
     print("Setting mode to GUIDED...")
-    # Mode 4 is GUIDED for ArduPilot. If using PX4, refer to its mode numbers.
-    # MAV_MODE_FLAG_CUSTOM_MODE_ENABLED is used for custom modes like GUIDED.
+    # Send a MAVLink command to set the drone's mode to GUIDED.
+    # GUIDED mode allows the drone to be controlled by MAVLink position commands.
     master.mav.command_long_send(
         target_system,
         target_component,
         mavutil.mavlink.MAV_CMD_DO_SET_MODE,
-        0,  # Confirmation
-        mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-        4,  # Custom mode value (4 for GUIDED in ArduPilot)
-        0, 0, 0, 0, 0 # Parameters 3-7 (unused)
+        0,  # Confirmation byte
+        mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED, # Flag to enable custom mode
+        4,  # Custom mode value (4 typically corresponds to GUIDED mode in ArduPilot)
+        0, 0, 0, 0, 0 # Unused parameters
     )
-    # Give the flight controller a moment to process the mode change
-    time.sleep(1)
+    time.sleep(1) # Give the flight controller a moment to process the mode change.
 
     print("Arming motors (if not already armed)...")
+    # Send a MAVLink command to arm the drone's motors.
     master.mav.command_long_send(
         target_system,
         target_component,
         mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
-        0,  # Confirmation
-        1,  # 1 to arm, 0 to disarm
-        0, 0, 0, 0, 0, 0 # Parameters 2-7 (unused)
+        0,  # Confirmation byte
+        1,  # Parameter 1: 1 to arm, 0 to disarm
+        0, 0, 0, 0, 0, 0 # Unused parameters
     )
-    # Wait until motors are armed. This is a blocking call.
+    # Wait until the motors are confirmed armed. This is a blocking call.
     try:
         master.motors_armed_wait()
         print("Motors armed.")
     except Exception as e:
         print(f"Failed to arm motors: {e}")
-        print("Please ensure the drone is safe to arm (e.g., pre-arm checks passed).")
+        print("Please ensure the drone is safe to arm (e.g., pre-arm checks passed and GPS lock).")
         return
-    TAKEOFF_ALTITUDE = 16.0
-    TAKEOFF_PITCH = 0.0 # Degrees. Use 0 for vertical takeoff.
-    print(f"Sending TAKEOFF command to {TAKEOFF_ALTITUDE} meters with pitch {TAKEOFF_PITCH}...")
+
+    # MODIFICATION 2: Set a slow ground speed for the drone during the mission.
+    # This command tells the flight controller to maintain a specific ground speed
+    # when navigating between waypoints.
+    slow_ground_speed = 0.8 # Target ground speed in meters/second
+    print(f"Setting ground speed to {slow_ground_speed} m/s...")
     master.mav.command_long_send(
-        master.target_system,
-        master.target_component,
-        mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
-        0, # confirmation
-        TAKEOFF_PITCH, # param1: pitch
-        0, 0, 0, 0, 0, # empty params
-        TAKEOFF_ALTITUDE # param7: altitude
+        target_system,
+        target_component,
+        mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+        0, # Confirmation byte
+        1, # Speed type: 1 means Groundspeed
+        slow_ground_speed, # The desired speed in m/s
+        -1, # Throttle (unused for groundspeed type, set to -1)
+        0, 0, 0, 0 # Unused parameters
     )
-    print(f"Waiting for drone to reach {TAKEOFF_ALTITUDE}m altitude...")
-    while True:
-        msg = master.recv_match(type=['GLOBAL_POSITION_INT'], blocking=True, timeout=1)
-        if msg:
-            current_alt_rel = msg.relative_alt / 1000.0 # GLOBAL_POSITION_INT.relative_alt is in mm
-            print(f"Current relative altitude: {current_alt_rel:.2f}m / {TAKEOFF_ALTITUDE:.2f}m")
-            if current_alt_rel >= TAKEOFF_ALTITUDE - 1:
-                print(f"Drone reached target takeoff altitude of {current_alt_rel:.2f}m.")
-                break
-        time.sleep(0.5) # Check more frequently during takeoff
+    time.sleep(1) # Allow the drone to register the new speed setting.
 
-    # --- Waypoint Generation ---
+    # --- Waypoint Generation for Survey Path ---
     print("Generating survey waypoints...")
-    # Find the bounding box of the given coordinates
-    min_lat = min(c[0] for c in coordinates)
-    max_lat = max(c[0] for c in coordinates)
-    min_lon = min(c[1] for c in coordinates)
-    max_lon = max(c[1] for c in coordinates)
+    # Determine the bounding box of the survey area from the provided coordinates.
+    min_lat = min(c[0] for c in airdrop_coordinates)
+    max_lat = max(c[0] for c in airdrop_coordinates)
+    min_lon = min(c[1] for c in airdrop_coordinates)
+    max_lon = max(c[1] for c in airdrop_coordinates)
 
-    # Calculate approximate degrees per meter at the average latitude of the field.
-    # This is an approximation for small areas. For larger areas or high precision,
-    # a projection to a local East-North-Up (ENU) frame would be more robust.
+    # Calculate approximate degrees per meter at the average latitude.
+    # This is a simplification for small areas; for high precision over large areas,
+    # a more sophisticated geodetic projection might be needed.
     avg_lat = (min_lat + max_lat) / 2
-    # Rough conversion factors (vary slightly with latitude):
-    # ~111,320 meters per degree of latitude
-    # ~111,320 * cos(latitude) meters per degree of longitude
-    meters_per_deg_lat = 111320.0
-    meters_per_deg_lon = 111320.0 * math.cos(math.radians(avg_lat))
+    meters_per_deg_lat = 111320.0 # Approximate meters per degree of latitude
 
-    # Convert line spacing from meters to degrees of latitude
+    # Convert the desired line spacing from meters to degrees of latitude.
     line_spacing_deg_lat = line_spacing / meters_per_deg_lat
 
-    waypoints = []
+    waypoints = [] # List to store the generated (latitude, longitude) waypoints
     current_lat = min_lat
-    # Start sweeping East (from min_lon to max_lon)
-    sweep_direction_east = True
+    sweep_direction_east = True # Flag to alternate the sweep direction (zig-zag)
 
-    # Generate parallel lines, alternating sweep direction (zig-zag pattern)
-    # Add a small margin to max_lat to ensure the last line is included
+    # Generate parallel lines, sweeping across the longitude range.
+    # The loop continues until the 'current_lat' exceeds the 'max_lat',
+    # with a small buffer to ensure the last line is included.
     while current_lat <= max_lat + line_spacing_deg_lat * 0.5:
         if sweep_direction_east:
-            # Fly from left to right (west to east)
+            # If sweeping east, add waypoints from min_lon to max_lon at current_lat.
             waypoints.append((current_lat, min_lon))
             waypoints.append((current_lat, max_lon))
         else:
-            # Fly from right to left (east to west)
+            # If sweeping west, add waypoints from max_lon to min_lon at current_lat.
             waypoints.append((current_lat, max_lon))
             waypoints.append((current_lat, min_lon))
 
-        current_lat += line_spacing_deg_lat
-        sweep_direction_east = not sweep_direction_east
+        current_lat += line_spacing_deg_lat # Move to the next survey line
+        sweep_direction_east = not sweep_direction_east # Reverse direction for the next line
 
     print(f"Generated {len(waypoints)} waypoints.")
     for i, wp in enumerate(waypoints):
@@ -142,39 +174,50 @@ def survey_rectangular_field(coordinates, altitude, line_spacing, connection_str
 
     # --- Execute Waypoints ---
     print("\nExecuting survey path...")
-    accuracy_threshold_meters = 2.0  # Consider waypoint reached if within this distance
-    altitude_accuracy_threshold_meters = 1.0 # Consider altitude reached if within this difference
-    waypoint_timeout_seconds = 120   # Max time to reach a waypoint
+    accuracy_threshold_meters = 2.0  # Distance (in meters) to consider a waypoint reached.
+    altitude_accuracy_threshold_meters = 1.0 # Altitude difference (in meters) to consider target altitude reached.
+    waypoint_timeout_seconds = 120   # Maximum time allowed to reach a single waypoint.
+    # MODIFICATION 3: Set the dwell time at each waypoint to 3 seconds.
+    dwell_time_at_waypoint = 3 # seconds the drone will pause at each waypoint.
 
     for i, (target_lat, target_lon) in enumerate(waypoints):
         print(f"\nNavigating to Waypoint {i+1}/{len(waypoints)}: "
               f"({target_lat:.6f}, {target_lon:.6f}) at altitude {altitude}m")
+        
+        # Send a SET_POSITION_TARGET_GLOBAL_INT MAVLink message.
+        # This command tells the drone to go to a specific global latitude, longitude, and altitude.
+        # The type_mask (0b110111111000) indicates that only position (lat, lon, alt)
+        # should be used, while velocity, acceleration, and yaw components are ignored.
+        # The drone's speed will be governed by the earlier DO_CHANGE_SPEED command.
         master.mav.set_position_target_global_int_send(
-            0,  # time_boot_ms (not used with type_mask)
+            0,  # time_boot_ms (not used when type_mask is active)
             target_system,
             target_component,
-            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, # Frame: Global Lat/Lon/Alt relative to home
-            0b110111111000, # Only use position, ignore velocity, accel, yaw,
-            int(target_lat * 1e7),  # Latitude in degrees * 1e7
-            int(target_lon * 1e7),  # Longitude in degrees * 1e7
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, # Frame: Global coordinates relative to home altitude
+            0b110111111000, # Type mask: only position is used (lat, lon, alt). Velocities, accel, yaw ignored.
+            int(target_lat * 1e7),  # Latitude in degrees * 10^7
+            int(target_lon * 1e7),  # Longitude in degrees * 10^7
             altitude,               # Altitude in meters (relative to home)
             0, 0, 0,                # Vx, Vy, Vz (ignored by type_mask)
             0, 0, 0,                # AFx, AFy, AFz (ignored by type_mask)
             0, 0                    # Yaw, Yaw Rate (ignored by type_mask)
         )
+        
         waypoint_reached = False
         start_time = time.time()
 
+        # Loop to monitor the drone's position until the waypoint is reached or timeout occurs.
         while not waypoint_reached and (time.time() - start_time) < waypoint_timeout_seconds:
-            # Receive messages from the flight controller
+            # Receive GLOBAL_POSITION_INT messages, which provide the drone's current GPS position and altitude.
             msg = master.recv_match(type='GLOBAL_POSITION_INT', blocking=True, timeout=0.1)
             if msg:
-                # GLOBAL_POSITION_INT provides current GPS coordinates and altitude
-                current_lat_drone = msg.lat / 1e7
-                current_lon_drone = msg.lon / 1e7
-                current_alt_drone = msg.relative_alt / 1000.0 # Altitude is in millimeters in this message
+                current_lat_drone = msg.lat / 1e7      # Drone's current latitude (degrees)
+                current_lon_drone = msg.lon / 1e7      # Drone's current longitude (degrees)
+                current_alt_drone = msg.relative_alt / 1000.0 # Drone's current relative altitude (meters, from millimeters)
 
+                # Calculate the 2D horizontal distance to the target waypoint.
                 dist_to_waypoint = haversine_distance(current_lat_drone, current_lon_drone, target_lat, target_lon)
+                # Calculate the absolute difference in altitude.
                 alt_difference = abs(current_alt_drone - altitude)
 
                 print(f"  Drone Pos: ({current_lat_drone:.6f}, {current_lon_drone:.6f}) "
@@ -182,69 +225,43 @@ def survey_rectangular_field(coordinates, altitude, line_spacing, connection_str
                       f"Dist to WP: {dist_to_waypoint:.1f}m, "
                       f"Alt Diff: {alt_difference:.1f}m")
 
-                # Check if the drone is within the accuracy threshold of the waypoint
+                # Check if the drone is within the defined accuracy thresholds for position and altitude.
                 if dist_to_waypoint < accuracy_threshold_meters and \
                    alt_difference < altitude_accuracy_threshold_meters:
                     waypoint_reached = True
                     print(f"Waypoint {i+1} reached!")
+                    
+                    # MODIFICATION 3: Pause the script for the specified dwell time at the waypoint.
+                    print(f"Pausing for {dwell_time_at_waypoint} seconds at waypoint...")
+                    time.sleep(dwell_time_at_waypoint)
                 else:
-                    time.sleep(0.5) # Wait a bit before next position check
+                    time.sleep(0.5) # Wait before checking position again to avoid busy-waiting.
             else:
-                time.sleep(0.1) # No message received, try again soon
-
+                time.sleep(0.1) # No message received, wait a short time and try again.
+        
+        # If the waypoint was not reached within the timeout period, print a warning.
         if not waypoint_reached:
             print(f"Warning: Drone did not reach Waypoint {i+1} within {waypoint_timeout_seconds} seconds. "
                   "This could be due to connectivity issues, flight controller problems, or external factors.")
-            # In a real-world application, you might want to implement error recovery,
-            # such as attempting to re-send the command, initiating RTL, or landing.
-            # For this example, we will proceed to the next waypoint.
-            # If a critical waypoint is missed, consider adding a `return` or `sys.exit()` here.
+            # Fallback behavior: attempt to send the drone to a fixed pre-defined safety point.
+            # Correcting original syntax error: `int(38.315386, * 1e7)` to `int(38.315386 * 1e7)`
+            master.mav.set_position_target_global_int_send(
+                0,  
+                target_system,
+                target_component,
+                mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, # Frame: Global Lat/Lon/Alt relative to home
+                0b110111111000, # Only use position, ignore velocity, accel, yaw,
+                int(38.315386 * 1e7),  # Fallback Latitude in degrees * 10^7
+                int(-76.542861 * 1e7),  # Fallback Longitude in degrees * 10^7 (added a longitude for clarity)
+                16,               # Fallback Altitude in meters (relative to home)
+                0, 0, 0,                # Vx, Vy, Vz (ignored by type_mask)
+                0, 0, 0,                # AFx, AFy, AFz (ignored by type_mask)
+                0, 0                    # Yaw, Yaw Rate (ignored by type_mask)
+            )
 
-    print("\nSurvey path completed. Initiating Return To Launch (RTL) mode.")
-    # Set mode to RTL (mode 6 for ArduPilot).
-    master.mav.command_long_send(
-        target_system,
-        target_component,
-        mavutil.mavlink.MAV_CMD_DO_SET_MODE,
-        0,
-        mavutil.mavlink.MAV_MODE_FLAG_CUSTOM_MODE_ENABLED,
-        6,  # Custom mode value (6 for RTL in ArduPilot)
-        0, 0, 0, 0, 0
-    )
-    print("Drone should now be returning to launch. Monitor its progress manually or via GCS.")
-
-    # It's good practice to close the connection when done
-    master.close()
-    print("MAVLink connection closed.")
-
-# --- Example Usage ---
+# Example usage (uncomment and replace with your actual values to run):
 if __name__ == "__main__":
-    # Define the coordinates of the rectangular field
-    # (latitude, longitude) tuples
-    field_coordinates = [
-        (38.315386, -76.550875),  # Corner 1
-        (38.315683, -76.552586),  # Corner 2
-        (38.315895, -76.552519),  # Corner 3
-        (38.315607, -76.550800)   # Corner 4
-    ]
-    survey_altitude_meters = 15 
-    survey_line_spacing_meters = 10 
-
-    mavlink_connection_string = 'udp:127.0.0.1:14550' # Default for SITL
-
-    print("--- Starting Drone Field Survey Simulation ---")
-    print(f"Field Coordinates: {field_coordinates}")
-    print(f"Survey Altitude: {survey_altitude_meters} meters")
-    print(f"Line Spacing: {survey_line_spacing_meters} meters")
-    print(f"MAVLink Connection: {mavlink_connection_string}")
-    print("\nIMPORTANT: This script is for demonstration. Always test in a simulator first.")
-    print("Ensure your drone is armed and ready for flight before running on hardware.")
-    print("Monitor the drone's behavior closely and be ready to take manual control if needed.")
-
-    survey_rectangular_field(
-        field_coordinates,
-        survey_altitude_meters,
-        survey_line_spacing_meters,
-        mavlink_connection_string
-    )
-    print("\n--- Drone Field Survey Simulation Finished ---")
+    # Make sure connection_string and airdrop_coordinates are set correctly
+    # For a real drone, you might need to adjust connection_string.
+    # For SITL, start `sim_vehicle.py --map --console` first.
+    survey_rectangular_field()

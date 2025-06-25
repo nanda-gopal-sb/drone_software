@@ -6,7 +6,7 @@ import subprocess
 from pymavlink import mavutil
 from ultralytics import YOLO
 
-RTSP_URL = "rtsp://your_rtsp_stream"
+RTSP_URL = "rtsp://192.168.144.25:8554/main.264"
 YOLO_MODEL_PATH = "../../yolov8n.pt"
 GPS_END = "38.31555,-76.55276"  # Leave empty for now
 MAPPING_DIR = "MAPPING"
@@ -46,7 +46,7 @@ def write_exif(image_path, lat, lon, alt):
     ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 def video_capture():
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(RTSP_URL)
     count = 0
     last_time = time.time()
     while not stop_event.is_set() and cap.isOpened():
