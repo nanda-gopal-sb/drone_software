@@ -7,8 +7,7 @@ from pymavlink import mavutil
 from ultralytics import YOLO
 
 RTSP_URL = "rtsp://192.168.144.25:8554/main.264"
-YOLO_MODEL_PATH = "../../yolov8n.pt"
-GPS_END = "38.31555,-76.55276"  # Leave empty for now
+YOLO_MODEL_PATH = "best.pt"
 MAPPING_DIR = "MAPPING"
 OBJECTS_FILE = "objects.txt"
 
@@ -32,8 +31,6 @@ def fetch_gps():
                 gps_data['lat'] = msg.lat / 1e7
                 gps_data['lon'] = msg.lon / 1e7
                 gps_data['alt'] = msg.relative_alt / 1000.0
-            if f"{gps_data['lat']},{gps_data['lon']}" == GPS_END:
-                stop_event.set()
 
 def write_exif(image_path, lat, lon, alt):
     subprocess.run([

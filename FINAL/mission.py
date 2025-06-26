@@ -1,9 +1,8 @@
 import time
 import math
 from pymavlink import mavutil
-import sys # Import sys for exiting the script
+import sys 
 
-# --- Constants for waypoint navigation ---
 WAYPOINT_REACH_THRESHOLD_M = 3.0  # Horizontal distance in meters to consider waypoint reached
 ALTITUDE_REACH_THRESHOLD_M = 1.0  # Vertical distance in meters to consider target altitude reached
 connection_string = 'udp:127.0.0.1:14550' # You can change this if needed
@@ -13,6 +12,7 @@ airdrop_coordinates = [
         (38.315895, -76.552519),  # Corner 3
         (38.315607, -76.550800)   # Corner 4
 ]
+
 survey_altitude_meters = 15 
 survey_line_spacing_meters = 7 
 try:
@@ -327,6 +327,7 @@ def dropPayload(location,pin):
                 print(f"Reached waypoint")
                 break
         time.sleep(0.1)
+    time.sleep(20)
     control_servo(pin)
 
 def control_servo(servo_pin: int, high_pwm: int = 2000, low_pwm: int = 1100, delay_seconds: int = 15):
@@ -576,19 +577,19 @@ def run_drone_mission():
                         break
                 time.sleep(0.1) # Small delay to avoid busy-waiting, but still poll frequently
 
-        if circle==0:
-            survey_rectangular_field()
-            object_waypoints=read_waypoints_from_file("objects.txt")
-            dropPayload(object_waypoints[0],9)
+    if circle==0:
+        survey_rectangular_field()
+        object_waypoints=read_waypoints_from_file("objects.txt")
+        dropPayload(object_waypoints[0],9)
 
-        if circle==1:
-            dropPayload(object_waypoints[1],10)
+    if circle==1:
+        dropPayload(object_waypoints[1],10)
 
-        if circle==2:
-            dropPayload(object_waypoints[2],11)
+    if circle==2:
+        dropPayload(object_waypoints[2],11)
 
-        if circle==3:
-            dropPayload(object_waypoints[3],12)
+    if circle==3:
+        dropPayload(object_waypoints[3],12)
 
     print("\n--- Mission complete! ---")
     # --- Land the drone ---
