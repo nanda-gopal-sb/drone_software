@@ -12,6 +12,7 @@ docker run --rm -it --gpus all \
   --skip-dsm \
   --skip-dense \
   --dtm
+os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay"
 
 
 

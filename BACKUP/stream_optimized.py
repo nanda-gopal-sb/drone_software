@@ -3,13 +3,8 @@ from ultralytics import YOLO
 import os
 import time # For basic FPS measurement and potential debug
 
-# --- FFmpeg options for OpenCV ---
-# These options are passed to OpenCV's FFMPEG backend when opening the RTSP stream.
-# Key;value pairs separated by '|'.
-# Be very precise with syntax: no spaces around '=', and use ';' as separator.
-#
 # Explanation of flags:
-# - rtsp_transport;tcp: Forces TCP for RTSP data. (You used TCP in your ffplay, so let's match)
+# - rtsp_transport;tcp: Forces TCP for RTSP data.
 # - fflags;nobuffer: Disables input buffering.
 # - flags;low_delay: Hints to the decoder to prioritize low delay.
 # - probesize;32: Reduces the data size used for stream analysis.
@@ -20,23 +15,14 @@ import time # For basic FPS measurement and potential debug
 #                       Helps prevent hangs on network issues. 5 seconds here.
 os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;tcp|fflags;nobuffer|flags;low_delay|probesize;32|analyzeduration;0|sync;skip_frames|rw_timeout;5000000"
 
-# --- YOLO Model Initialization ---
-# The YOLO model will internally create a cv2.VideoCapture object for the source.
-# The environment variable set above will be active when this happens.
 model = YOLO("best.pt")
 
-# --- Stream Source ---
 source = "rtsp://192.168.144.25:8554/main.264"
-# source = "http://localhost:3000/mjpeg-stream" # Keep this commented if not in use
 
 print("Starting stream processing...")
 
-# --- Process Stream with YOLO ---
-# stream=True is essential for continuous frame processing.
-# verbose=False reduces YOLO's print output.
 results = model(source, stream=True, verbose=False)
 
-# For basic FPS/latency observation
 start_time = time.time()
 frame_count = 0
 
